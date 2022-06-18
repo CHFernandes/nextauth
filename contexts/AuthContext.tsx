@@ -7,18 +7,18 @@ type User = {
     email: string;
     permissions: string[];
     roles: string[];
-}
+};
 
 type SignInCredentials = {
     email: string;
     password: string;
-}
+};
 
 type AuthContextData = {
     signIn(credentials: SignInCredentials): Promise<void>;
     user: User;
     isAuthenticated: boolean;
-}
+};
 
 type AuthProviderProps = {
     children: ReactNode;
@@ -58,7 +58,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
                 password
             })
 
-            const { token, refreshToken,permissions, roles } = response.data
+        const { token, refreshToken, permissions, roles } = response.data;
 
             setCookie(undefined, 'nextauth.token', token, {
                 maxAge: 24 * 60 * 60 * 30, // 30 days
@@ -73,9 +73,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
                 email,
                 permissions,
                 roles,
-            })
+            });
 
-            api.defaults.headers.common['Authorization'] = `Bearer ${token}`
+        api.defaults.headers['Authorization'] = `Bearer ${token}`;
 
             Router.push('/dashboard')
         } catch (error) {
