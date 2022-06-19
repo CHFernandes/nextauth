@@ -1,18 +1,48 @@
 import { GetServerSideProps, GetServerSidePropsContext, GetServerSidePropsResult } from "next";
 import { destroyCookie, parseCookies } from "nookies";
 import { AuthTokenError } from "../services/errors/AuthTokenError";
+import decode from 'jwt-decode';
+import { validadeUserPermissions } from "./validateUserPermissions";
 
-export function withSSRAuth<P extends { [key: string]: any; }>(fn: GetServerSideProps<P>){
+type WithSSRAuthOptions = {
+  permissions?: string[];
+  roles?: string[];
+}
+
+export function withSSRAuth<P extends { [key: string]: any; }>(fn: GetServerSideProps<P>, options?: WithSSRAuthOptions){
   return async (ctx: GetServerSidePropsContext): Promise<GetServerSidePropsResult<P>> => {
     const cookies = parseCookies(ctx);
+    const token = cookies['nextauth.token'];
 
-    if (!cookies['nextauth.token']) {
+    if (!token) {
       return {
         redirect: {
           destination: '/',
           permanent: false,
         }
       }
+    }
+
+    if (options) {
+
+      const user = decode<{ permissions: string[], roles: string[] }>(token);
+      const { permissions, roles } = options;
+
+      const userHasValidPermissions = validadeUserPermissions({
+        user,
+        permissions,
+        roles,
+      });
+
+      if (!userHasValidPermissions) {
+        return {
+          redirect: {
+            destination: '/dashboard',
+            permanent: false
+          }
+        }
+      }
+
     }
 
     try {
@@ -30,11 +60,15 @@ export function withSSRAuth<P extends { [key: string]: any; }>(fn: GetServerSide
         }
       }
 
+      // return {
+      //   redirect: {
+      //     destination: '/error', // Erro não esperado, redirecionar para uma página publica de erro genérico
+      //     permanent: false
+      //   }
+      // }
+
       return {
-        redirect: {
-          destination: '/error', // Erro não esperado, redirecionar para uma página publica de erro genérico
-          permanent: false
-        }
+        notFound: true,
       }
     }
   }
