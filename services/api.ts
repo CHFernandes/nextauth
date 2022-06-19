@@ -1,18 +1,21 @@
 import axios, { AxiosError } from 'axios';
-import Router from "next/router";
-import { destroyCookie, parseCookies, setCookie } from 'nookies';
+import { GetServerSidePropsContext } from 'next/types';
+import { parseCookies, setCookie } from 'nookies';
 import { signOut } from '../contexts/AuthContext';
+import { AuthTokenError } from './errors/AuthTokenError';
 
 type FailedRequestQueue = {
     onSuccess: (token: string) => void;
     onFailure: (error: AxiosError) => void;
 };
 
+type SetupAPIClientProps = GetServerSidePropsContext | undefined;
+
 
 let isRefreshing = false;
 let failedRequestsQueue:FailedRequestQueue[] = [];
 
-export function setupAPIClient(ctx = undefined) {
+export function setupAPIClient(ctx: SetupAPIClientProps = undefined) {
     let cookies = parseCookies(ctx);
 
     const api = axios.create({
@@ -86,7 +89,9 @@ export function setupAPIClient(ctx = undefined) {
             } else {
                 if(typeof window !== 'undefined') {
                     signOut();
-                }   
+                } else {
+                    return Promise.reject(new AuthTokenError());
+                }
             }
         }
     
